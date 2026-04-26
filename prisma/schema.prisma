@@ -40,6 +40,7 @@ model Tienda {
   actualizadoEn DateTime @updatedAt
 
   afiliados    Afiliado[]
+  campanas     Campana[]
   visitas      VisitaReferida[]
   conversiones EventoConversion[]
   cobrosUso    BitacoraCobroUso[]
@@ -57,6 +58,7 @@ model Afiliado {
   actualizadoEn DateTime @updatedAt
 
   tienda       Tienda             @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  campanas     CampanaAfiliado[]
   visitas      VisitaReferida[]
   conversiones EventoConversion[]
 
@@ -64,10 +66,45 @@ model Afiliado {
   @@index([tiendaId, estado])
 }
 
+model Campana {
+  id            String    @id @default(cuid())
+  tiendaId      String
+  nombre        String
+  codigo        String
+  descripcion   String?
+  fechaInicio   DateTime
+  fechaFin      DateTime?
+  estado        Int       @default(1)
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  tienda       Tienda             @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  afiliados    CampanaAfiliado[]
+  visitas      VisitaReferida[]
+  conversiones EventoConversion[]
+
+  @@unique([tiendaId, codigo])
+  @@index([tiendaId, estado, fechaInicio(sort: Desc)])
+}
+
+model CampanaAfiliado {
+  id         String   @id @default(cuid())
+  campanaId  String
+  afiliadoId String
+  creadoEn   DateTime @default(now())
+
+  campana  Campana  @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  afiliado Afiliado @relation(fields: [afiliadoId], references: [id], onDelete: Cascade)
+
+  @@unique([campanaId, afiliadoId])
+  @@index([afiliadoId])
+}
+
 model VisitaReferida {
   id                String    @id @default(cuid())
   tiendaId          String
   afiliadoId        String
+  campanaId         String?
   codigoRefOriginal String?
   claveSesion       String?
   rutaEntrada       String?
@@ -80,15 +117,18 @@ model VisitaReferida {
 
   tienda       Tienda             @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   afiliado     Afiliado           @relation(fields: [afiliadoId], references: [id], onDelete: Cascade)
+  campana      Campana?           @relation(fields: [campanaId], references: [id], onDelete: SetNull)
   conversiones EventoConversion[]
 
   @@index([tiendaId, afiliadoId, creadoEn(sort: Desc)])
+  @@index([tiendaId, campanaId, creadoEn(sort: Desc)])
 }
 
 model EventoConversion {
   id                    String   @id @default(cuid())
   tiendaId              String
   afiliadoId            String
+  campanaId             String?
   visitaReferidaId      String?
   ordenId               String
   ordenNombre           String?
@@ -105,6 +145,7 @@ model EventoConversion {
 
   tienda         Tienda            @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
   afiliado       Afiliado          @relation(fields: [afiliadoId], references: [id], onDelete: Cascade)
+  campana        Campana?          @relation(fields: [campanaId], references: [id], onDelete: SetNull)
   visitaReferida VisitaReferida?   @relation(fields: [visitaReferidaId], references: [id], onDelete: SetNull)
   cobroUso       BitacoraCobroUso?
 
@@ -112,6 +153,7 @@ model EventoConversion {
   @@unique([tiendaId, pixelEventoId])
   @@index([tiendaId, ocurridoEn(sort: Desc)])
   @@index([tiendaId, afiliadoId, ocurridoEn(sort: Desc)])
+  @@index([tiendaId, campanaId, ocurridoEn(sort: Desc)])
 }
 
 model BitacoraCobroUso {
