@@ -1,16 +1,18 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Form, Link, redirect, useActionData, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import prisma from "../db.server";
+import {
+	actualizarCampana,
+	asignarAfiliadoACampana,
+	desasignarAfiliadoDeCampana,
+	listarAfiliadosOptionModel,
+	obtenerCampanaDetalleModel,
+	validarCampanaUpdateDesdeFormData,
+} from "../models/campana/campana.server";
 import { authenticate } from "../shopify.server";
 import { obtenerOCrearTienda } from "../tenant.server";
 
 type ActionData = { ok: boolean; mensaje: string };
-
-function fechaInvalida(fecha: string) {
-  const date = new Date(fecha);
-  return Number.isNaN(date.getTime());
-}
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -18,42 +20,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const campanaId = String(params.campanaId || "");
 
   const [campana, afiliados] = await Promise.all([
-    prisma.campana.findFirst({
-      where: { id: campanaId, tiendaId: tienda.id },
-      include: { afiliados: { include: { afiliado: true } } },
-    }),
-    prisma.afiliado.findMany({
-      where: { tiendaId: tienda.id },
-      orderBy: { nombre: "asc" },
-    }),
+    obtenerCampanaDetalleModel(campanaId, tienda.id),
+    listarAfiliadosOptionModel(tienda.id),
   ]);
 
   if (!campana) {
     throw new Response("Campana no encontrada", { status: 404 });
   }
 
-  return {
-    campana: {
-      id: campana.id,
-      nombre: campana.nombre,
-      codigo: campana.codigo,
-      descripcion: campana.descripcion,
-      estado: campana.estado,
-      fechaInicio: campana.fechaInicio.toISOString().slice(0, 10),
-      fechaFin: campana.fechaFin ? campana.fechaFin.toISOString().slice(0, 10) : "",
-      afiliados: campana.afiliados.map((item) => ({
-        id: item.id,
-        afiliadoId: item.afiliadoId,
-        codigo: item.afiliado.codigo,
-        nombre: item.afiliado.nombre,
-      })),
-    },
-    afiliados: afiliados.map((afiliado) => ({
-      id: afiliado.id,
-      codigo: afiliado.codigo,
-      nombre: afiliado.nombre,
-    })),
-  };
+  return { campana, afiliados };
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -69,29 +44,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   try {
     if (intent === "editar_campana") {
-      const nombre = String(formData.get("nombre") || "").trim();
-      const descripcion = String(formData.get("descripcion") || "").trim() || null;
-      const fechaInicio = String(formData.get("fechaInicio") || "");
-      const fechaFin = String(formData.get("fechaFin") || "");
-      const estado = Number.parseInt(String(formData.get("estado") || "1"), 10);
-
-      if (!nombre || !fechaInicio || !Number.isInteger(estado) || fechaInvalida(fechaInicio)) {
-        return { ok: false, mensaje: "Completa correctamente los datos de la campana." } satisfies ActionData;
-      }
-      if (fechaFin && (fechaInvalida(fechaFin) || new Date(fechaFin) < new Date(fechaInicio))) {
-        return { ok: false, mensaje: "La fecha de fin debe ser posterior al inicio." } satisfies ActionData;
+      const validacion = validarCampanaUpdateDesdeFormData(formData);
+      if (!validacion.ok) {
+        return { ok: false, mensaje: validacion.mensaje } satisfies ActionData;
       }
 
-      await prisma.campana.updateMany({
-        where: { id: campanaId, tiendaId: tienda.id },
-        data: {
-          nombre,
-          descripcion,
-          fechaInicio: new Date(fechaInicio),
-          fechaFin: fechaFin ? new Date(fechaFin) : null,
-          estado,
-        },
-      });
+      await actualizarCampana(campanaId, tienda.id, validacion.data);
       return redirect("/app/campanas?ok=Campana+actualizada");
     }
 
@@ -101,11 +59,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return { ok: false, mensaje: "Selecciona un afiliado." } satisfies ActionData;
       }
 
-      await prisma.campanaAfiliado.upsert({
-        where: { campanaId_afiliadoId: { campanaId, afiliadoId } },
-        update: {},
-        create: { campanaId, afiliadoId },
-      });
+      await asignarAfiliadoACampana(campanaId, afiliadoId);
       return redirect(`/app/campanas/${campanaId}?ok=Afiliado+asignado`);
     }
 
@@ -115,9 +69,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return { ok: false, mensaje: "Afiliado invalido." } satisfies ActionData;
       }
 
-      await prisma.campanaAfiliado.delete({
-        where: { campanaId_afiliadoId: { campanaId, afiliadoId } },
-      });
+      await desasignarAfiliadoDeCampana(campanaId, afiliadoId);
       return redirect(`/app/campanas/${campanaId}?ok=Afiliado+retirado`);
     }
 

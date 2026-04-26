@@ -8,6 +8,42 @@ async function main() {
     create: { dominio: "demo-store.myshopify.com" },
   });
 
+  await prisma.configuracionTienda.upsert({
+    where: { tiendaId: tienda.id },
+    update: {},
+    create: {
+      tiendaId: tienda.id,
+      parametroRef: "ref",
+      diasVentanaAtribucion: 30,
+      trackingActivo: true,
+      requiereCampana: false,
+    },
+  });
+
+  await prisma.suscripcionApp.upsert({
+    where: { shopifySubscriptionId: "gid://shopify/AppSubscription/demo" },
+    update: {
+      tiendaId: tienda.id,
+      nombrePlan: "Development",
+      shopifyLineItemId: "gid://shopify/AppSubscriptionLineItem/demo",
+      cappedAmount: "100.00",
+      moneda: "USD",
+      estado: 1,
+      fechaActivacion: new Date("2026-04-26T12:00:00.000Z"),
+      fechaCancelacion: null,
+    },
+    create: {
+      tiendaId: tienda.id,
+      nombrePlan: "Development",
+      shopifySubscriptionId: "gid://shopify/AppSubscription/demo",
+      shopifyLineItemId: "gid://shopify/AppSubscriptionLineItem/demo",
+      cappedAmount: "100.00",
+      moneda: "USD",
+      estado: 1,
+      fechaActivacion: new Date("2026-04-26T12:00:00.000Z"),
+    },
+  });
+
   const afiliados = [
     {
       codigo: "TIENDASMART",

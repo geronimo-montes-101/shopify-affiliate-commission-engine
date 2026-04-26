@@ -1,39 +1,17 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Link, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import prisma from "../db.server";
+import { obtenerDashboardMetricas } from "../models/dashboard/dashboard.server";
 import { authenticate } from "../shopify.server";
 import { obtenerOCrearTienda } from "../tenant.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const tienda = await obtenerOCrearTienda(session.shop);
-
-  const [afiliados, campanas, resumenConversiones] = await Promise.all([
-    prisma.afiliado.count({ where: { tiendaId: tienda.id } }),
-    prisma.campana.count({ where: { tiendaId: tienda.id } }),
-    prisma.eventoConversion.aggregate({
-      where: { tiendaId: tienda.id },
-      _sum: {
-        totalOrden: true,
-        montoComisionApp: true,
-        montoComisionAfiliado: true,
-      },
-      _count: {
-        id: true,
-      },
-    }),
-  ]);
+  const metricas = await obtenerDashboardMetricas(tienda.id);
 
   return {
-    metricas: {
-      totalAfiliados: afiliados,
-      totalCampanas: campanas,
-      totalVentasReferidas: Number(resumenConversiones._sum.totalOrden ?? 0),
-      totalComisionApp: Number(resumenConversiones._sum.montoComisionApp ?? 0),
-      totalComisionAfiliados: Number(resumenConversiones._sum.montoComisionAfiliado ?? 0),
-      totalConversiones: resumenConversiones._count.id,
-    },
+    metricas,
   };
 };
 

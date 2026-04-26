@@ -1,24 +1,21 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Form, Link, redirect, useActionData, useLoaderData, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import prisma from "../db.server";
+import {
+	eliminarCampana,
+	ENUM_ESTADO_CAMPANA,
+	listarCampanasListModel,
+} from "../models/campana/campana.server";
 import { authenticate } from "../shopify.server";
 import { obtenerOCrearTienda } from "../tenant.server";
 
 type ActionData = { ok: boolean; mensaje: string };
 
-const ESTADO_CAMPANA = {
-  BORRADOR: 0,
-  ACTIVA: 1,
-  PAUSADA: 2,
-  FINALIZADA: 3,
-} as const;
-
 function etiquetaEstadoCampana(estado: number) {
-  if (estado === ESTADO_CAMPANA.BORRADOR) return "BORRADOR";
-  if (estado === ESTADO_CAMPANA.ACTIVA) return "ACTIVA";
-  if (estado === ESTADO_CAMPANA.PAUSADA) return "PAUSADA";
-  if (estado === ESTADO_CAMPANA.FINALIZADA) return "FINALIZADA";
+  if (estado === ENUM_ESTADO_CAMPANA.BORRADOR) return "BORRADOR";
+  if (estado === ENUM_ESTADO_CAMPANA.ACTIVA) return "ACTIVA";
+  if (estado === ENUM_ESTADO_CAMPANA.PAUSADA) return "PAUSADA";
+  if (estado === ENUM_ESTADO_CAMPANA.FINALIZADA) return "FINALIZADA";
   return `DESCONOCIDO (${estado})`;
 }
 
@@ -29,34 +26,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const estadoRaw = url.searchParams.get("estado");
   const estadoNumero = estadoRaw ? Number.parseInt(estadoRaw, 10) : undefined;
 
-  const campanas = await prisma.campana.findMany({
-    where: {
-      tiendaId: tienda.id,
-      ...(Number.isInteger(estadoNumero) ? { estado: estadoNumero } : {}),
-    },
-    include: {
-      _count: {
-        select: { afiliados: true },
-      },
-    },
-    orderBy: { fechaInicio: "desc" },
-  });
+  const campanas = await listarCampanasListModel(
+    tienda.id,
+    Number.isInteger(estadoNumero) ? estadoNumero : undefined,
+  );
 
   return {
-    campanas: campanas.map((campana) => ({
-      id: campana.id,
-      nombre: campana.nombre,
-      codigo: campana.codigo,
-      estado: campana.estado,
-      fechaInicio: campana.fechaInicio.toISOString(),
-      fechaFin: campana.fechaFin ? campana.fechaFin.toISOString() : null,
-      afiliadosCount: campana._count.afiliados,
-    })),
+    campanas,
     filtroEstado: Number.isInteger(estadoNumero) ? estadoNumero : null,
   };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const tienda = await obtenerOCrearTienda(session.shop);
   const formData = await request.formData();
   const intent = String(formData.get("_action") || "");
 
@@ -70,7 +53,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    await prisma.campana.delete({ where: { id: campanaId } });
+    await eliminarCampana(campanaId, tienda.id);
     return redirect("/app/campanas?ok=Campana+eliminada");
   } catch {
     return { ok: false, mensaje: "No se pudo eliminar la campana." } satisfies ActionData;

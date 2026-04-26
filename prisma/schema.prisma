@@ -39,11 +39,45 @@ model Tienda {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  afiliados    Afiliado[]
-  campanas     Campana[]
-  visitas      VisitaReferida[]
-  conversiones EventoConversion[]
-  cobrosUso    BitacoraCobroUso[]
+  configuracion ConfiguracionTienda?
+  suscripciones SuscripcionApp[]
+  afiliados     Afiliado[]
+  campanas      Campana[]
+  visitas       VisitaReferida[]
+  conversiones  EventoConversion[]
+  cobrosUso     BitacoraCobroUso[]
+}
+
+model ConfiguracionTienda {
+  id                    String   @id @default(cuid())
+  tiendaId              String   @unique
+  parametroRef          String   @default("ref")
+  diasVentanaAtribucion Int      @default(30)
+  trackingActivo        Boolean  @default(true)
+  requiereCampana       Boolean  @default(false)
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+
+  tienda Tienda @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+}
+
+model SuscripcionApp {
+  id                    String    @id @default(cuid())
+  tiendaId              String
+  nombrePlan            String?
+  shopifySubscriptionId String?   @unique
+  shopifyLineItemId     String?   @unique
+  cappedAmount          Decimal   @default(0)
+  moneda                String    @default("USD")
+  estado                Int       @default(0)
+  fechaActivacion       DateTime?
+  fechaCancelacion      DateTime?
+  creadoEn              DateTime  @default(now())
+  actualizadoEn         DateTime  @updatedAt
+
+  tienda Tienda @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId, estado, creadoEn(sort: Desc)])
 }
 
 model Afiliado {

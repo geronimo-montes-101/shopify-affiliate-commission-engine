@@ -1,7 +1,11 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { Form, Link, redirect, useActionData, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import prisma from "../db.server";
+import {
+  eliminarAfiliado,
+  listarAfiliadosListModel,
+  toAfiliadoCardModel,
+} from "../models/afiliado/afiliado.server";
 import { authenticate } from "../shopify.server";
 import { obtenerOCrearTienda } from "../tenant.server";
 
@@ -18,25 +22,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const tienda = await obtenerOCrearTienda(session.shop);
 
-  const afiliados = await prisma.afiliado.findMany({
-    where: { tiendaId: tienda.id },
-    orderBy: { creadoEn: "desc" },
-  });
+  const afiliadosList = await listarAfiliadosListModel(tienda.id);
 
   return {
-    afiliados: afiliados.map((afiliado) => ({
-      id: afiliado.id,
-      nombre: afiliado.nombre,
-      codigo: afiliado.codigo,
-      email: afiliado.email,
-      estado: afiliado.estado,
-      tasaComision: Number(afiliado.tasaComision) * 100,
-      creadoEn: afiliado.creadoEn.toISOString(),
-    })),
+    afiliados: afiliadosList,
+    afiliadosCards: afiliadosList.map(toAfiliadoCardModel),
   };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const tienda = await obtenerOCrearTienda(session.shop);
   const formData = await request.formData();
   const intent = String(formData.get("_action") || "");
 
@@ -50,7 +46,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    await prisma.afiliado.delete({ where: { id: afiliadoId } });
+    await eliminarAfiliado(afiliadoId, tienda.id);
     return redirect("/app/afiliados?ok=Afiliado+eliminado");
   } catch {
     return { ok: false, mensaje: "No se pudo eliminar el afiliado." } satisfies ActionData;
@@ -58,7 +54,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function AppAfiliadosListRoute() {
-  const { afiliados } = useLoaderData<typeof loader>();
+  const { afiliados, afiliadosCards } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
 
   return (
@@ -134,7 +130,7 @@ export default function AppAfiliadosListRoute() {
       </div>
 
       <div className="afiliados-cards">
-        {afiliados.map((afiliado) => (
+        {afiliadosCards.map((afiliado) => (
           <div
             key={afiliado.id}
             style={{ border: "1px solid #d9d9d9", borderRadius: 8, padding: 12, background: "#fff" }}

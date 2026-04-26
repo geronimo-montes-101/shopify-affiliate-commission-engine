@@ -1,54 +1,15 @@
 import type { ActionFunctionArgs, HeadersFunction } from "react-router";
 import { Form, Link, redirect, useActionData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import prisma from "../db.server";
+import {
+	crearAfiliado,
+	ENUM_ESTADO_AFILIADO,
+	validarAfiliadoDesdeFormData,
+} from "../models/afiliado/afiliado.server";
 import { authenticate } from "../shopify.server";
 import { obtenerOCrearTienda } from "../tenant.server";
 
 type ActionData = { ok: boolean; mensaje: string };
-
-/**
- * Enum Estados de un afiliado
- */
-const ENUM_ESTADO_AFILIADO = {
-	INACTIVO: 0,
-	ACTIVO: 1,
-	SUSPENDIDO: 2,
-} as const;
-
-/**
- * Normalizar codigo de un afiliado
- * @param valor Valor a normalizar
- * @returns Codigo normalizado
- */
-function normalizarCodigo(valor: FormDataEntryValue | null) {
-	return String(valor || "")
-		.trim()
-		.toUpperCase()
-		.replace(/\s+/g, "-");
-}
-
-/**
- * Parsear tasa de comision de un afiliado
- * @param valor Valor a parsear
- * @returns Tasa de comision parseada
- */
-function parsearTasaComision(valor: FormDataEntryValue | null) {
-	const porcentaje = Number.parseFloat(String(valor || ""));
-	if (Number.isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100)
-		return null;
-	return (porcentaje / 100).toFixed(4);
-}
-
-/**
- * Validar email de un afiliado
- * @param email Email a validar
- * @returns true si el email es valido, false en caso contrario
- */
-function emailValido(email: string | null) {
-	if (!email) return true;
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
 
 /**
  * Action de la ruta
@@ -59,55 +20,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 	const { session } = await authenticate.admin(request);
 	const tienda = await obtenerOCrearTienda(session.shop);
 	const formData = await request.formData();
-
-	const nombre = String(formData.get("nombre") || "").trim();
-	const codigo = normalizarCodigo(formData.get("codigo"));
-	const email = String(formData.get("email") || "").trim() || null;
-	const tasaComision = parsearTasaComision(formData.get("tasaComision"));
-	const estado = Number.parseInt(
-		String(formData.get("estado") || ENUM_ESTADO_AFILIADO.ACTIVO),
-		10,
-	);
-
-	if (!nombre || nombre.length < 3) {
-		return {
-			ok: false,
-			mensaje: "El nombre debe tener al menos 3 caracteres.",
-		} satisfies ActionData;
-	}
-
-	if (!codigo || codigo.length < 3) {
-		return {
-			ok: false,
-			mensaje: "El codigo debe tener al menos 3 caracteres.",
-		} satisfies ActionData;
-	}
-
-	if (!emailValido(email)) {
-		return {
-			ok: false,
-			mensaje: "El email no tiene un formato valido.",
-		} satisfies ActionData;
-	}
-
-	if (tasaComision === null || !Number.isInteger(estado)) {
-		return {
-			ok: false,
-			mensaje: "Completa un porcentaje valido (0-100) y estado.",
-		} satisfies ActionData;
+	const validacion = validarAfiliadoDesdeFormData(formData);
+	if (!validacion.ok) {
+		return { ok: false, mensaje: validacion.mensaje } satisfies ActionData;
 	}
 
 	try {
-		await prisma.afiliado.create({
-			data: {
-				tiendaId: tienda.id,
-				nombre,
-				codigo,
-				email,
-				tasaComision,
-				estado,
-			},
-		});
+		await crearAfiliado(tienda.id, validacion.data);
 		return redirect("/app/afiliados?ok=Afiliado+creado");
 	} catch (error) {
 		if (error instanceof Error && error.message.includes("Unique constraint")) {
