@@ -1,3 +1,4 @@
+import { Afiliado, Campana, CampanaAfiliado } from "@prisma/client";
 import prisma from "../db.server";
 import {
 	ENUM_ESTADO_CAMPANA,
@@ -18,8 +19,6 @@ export type ValidacionCampanaCreateResult =
 export type ValidacionCampanaUpdateResult =
 	| ValidacionCampanaError
 	| ValidacionCampanaUpdateOk;
-
-export { ENUM_ESTADO_CAMPANA };
 
 function codigoValido(codigo: string) {
 	return /^[A-Z0-9\-_]+$/.test(codigo);
@@ -155,7 +154,7 @@ export async function listarCampanasListModel(
 		orderBy: { fechaInicio: "desc" },
 	});
 
-	return campanas.map((campana) => ({
+	return campanas.map((campana: Campana & { _count: { afiliados: number } }) => ({
 		id: campana.id,
 		nombre: campana.nombre,
 		codigo: campana.codigo,
@@ -185,7 +184,7 @@ export async function obtenerCampanaDetalleModel(
 		estado: campana.estado,
 		fechaInicio: campana.fechaInicio.toISOString().slice(0, 10),
 		fechaFin: campana.fechaFin ? campana.fechaFin.toISOString().slice(0, 10) : "",
-		afiliados: campana.afiliados.map((item) => ({
+		afiliados: campana.afiliados.map((item: CampanaAfiliado & { afiliado: Afiliado }) => ({
 			id: item.id,
 			afiliadoId: item.afiliadoId,
 			codigo: item.afiliado.codigo,
@@ -202,7 +201,7 @@ export async function listarAfiliadosOptionModel(
 		orderBy: { nombre: "asc" },
 	});
 
-	return afiliados.map((afiliado) => ({
+	return afiliados.map((afiliado: Afiliado) => ({
 		id: afiliado.id,
 		codigo: afiliado.codigo,
 		nombre: afiliado.nombre,

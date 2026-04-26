@@ -1,13 +1,11 @@
-import prisma from "../../db.server";
+import prisma from "../db.server";
 import {
   ENUM_ESTADO_CONVERSION,
   type ConversionCreateInput,
   type ConversionPayload,
   type ConversionResult,
 } from "./conversion.types";
-import { obtenerOCrearTienda } from "../tienda/tienda.server";
-
-export { ENUM_ESTADO_CONVERSION };
+import { obtenerOCrearTienda } from "../../tenant.server";
 
 function esDominioShopifyValido(shopDomain: string) {
   return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(shopDomain);
@@ -116,13 +114,13 @@ export async function registrarConversion(
 
     const campana = input.campaignCode
       ? await prisma.campana.findUnique({
-          where: {
-            tiendaId_codigo: {
-              tiendaId: tienda.id,
-              codigo: input.campaignCode,
-            },
+        where: {
+          tiendaId_codigo: {
+            tiendaId: tienda.id,
+            codigo: input.campaignCode,
           },
-        })
+        },
+      })
       : null;
 
     const montoComisionApp = (

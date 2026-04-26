@@ -1,11 +1,9 @@
-import prisma from "../../db.server";
+import prisma from "../db.server";
 import {
   ENUM_ESTADO_SUSCRIPCION_APP,
   type ConfiguracionTiendaModel,
   type SuscripcionAppModel,
 } from "./tienda.types";
-
-export { ENUM_ESTADO_SUSCRIPCION_APP };
 
 export async function obtenerOCrearTienda(shop: string) {
   return prisma.tienda.upsert({

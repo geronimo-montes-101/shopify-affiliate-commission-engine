@@ -1,9 +1,13 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "0ffcdc556b677478444a2a2fb1b0c631"
-name = "app-afiliados-sh"
+client_id = "b7c79d0994f51bd2409ca635b95b32d9"
+name = "app-sh-afiliado"
 application_url = "https://example.com"
 embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
 
 [webhooks]
 api_version = "2026-07"
@@ -14,6 +18,3 @@ scopes = ""
 
 [auth]
 redirect_urls = [ ]
-
-[build]
-automatically_update_urls_on_dev = true

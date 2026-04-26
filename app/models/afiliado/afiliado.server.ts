@@ -1,4 +1,5 @@
-import prisma from "../../db.server";
+import { Afiliado } from "@prisma/client";
+import prisma from "../db.server";
 import {
 	ENUM_ESTADO_AFILIADO,
 	type AfiliadoCardModel,
@@ -23,8 +24,6 @@ type ValidacionAfiliadoOk = {
 export type ValidacionAfiliadoResult =
 	| ValidacionAfiliadoError
 	| ValidacionAfiliadoOk;
-
-export { ENUM_ESTADO_AFILIADO };
 
 function normalizarCodigo(valor: FormDataEntryValue | null) {
 	return String(valor || "")
@@ -124,7 +123,7 @@ export async function listarAfiliadosListModel(
 	tiendaId: string,
 ): Promise<AfiliadoListItemModel[]> {
 	const afiliados = await listarAfiliados(tiendaId);
-	return afiliados.map((afiliado) => ({
+	return afiliados.map((afiliado: Afiliado) => ({
 		id: afiliado.id,
 		nombre: afiliado.nombre,
 		codigo: afiliado.codigo,
