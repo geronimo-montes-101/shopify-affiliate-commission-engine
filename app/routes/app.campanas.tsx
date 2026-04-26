@@ -1,4 +1,9 @@
-import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
+import type {
+  ActionFunctionArgs,
+  HeadersFunction,
+  LoaderFunctionArgs,
+} from "react-router";
+import type { CSSProperties } from "react";
 import { Form, useActionData, useLoaderData, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import prisma from "../db.server";
@@ -13,6 +18,87 @@ const ESTADO_CAMPANA = {
   PAUSADA: 2,
   FINALIZADA: 3,
 } as const;
+
+const surfaceStyle: CSSProperties = {
+  border: "1px solid #d9d9d9",
+  borderRadius: 8,
+  padding: 16,
+  background: "#ffffff",
+};
+
+const formGridStyle: CSSProperties = {
+  display: "grid",
+  gap: 14,
+};
+
+const twoColumnGridStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+};
+
+const fieldLabelStyle: CSSProperties = {
+  display: "grid",
+  gap: 6,
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#303030",
+};
+
+const fieldStyle: CSSProperties = {
+  width: "100%",
+  minHeight: 40,
+  padding: "10px 12px",
+  border: "1px solid #c9cccf",
+  borderRadius: 8,
+  fontSize: 14,
+  lineHeight: 1.4,
+  boxSizing: "border-box",
+  background: "#ffffff",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: 40,
+  padding: "10px 14px",
+  borderRadius: 8,
+  border: "1px solid #1f1f1f",
+  background: "#1f1f1f",
+  color: "#ffffff",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  ...primaryButtonStyle,
+  background: "#ffffff",
+  color: "#1f1f1f",
+  border: "1px solid #c9cccf",
+};
+
+const dangerButtonStyle: CSSProperties = {
+  ...secondaryButtonStyle,
+  color: "#8e1f0b",
+  border: "1px solid #d9b5af",
+  background: "#fff5f5",
+};
+
+const pillStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: 28,
+  padding: "4px 10px",
+  borderRadius: 999,
+  background: "#f1f2f3",
+  color: "#303030",
+  fontSize: 13,
+  fontWeight: 600,
+};
+
+const helperStyle: CSSProperties = {
+  color: "#616161",
+  fontSize: 13,
+  margin: 0,
+};
 
 function etiquetaEstadoCampana(estado: number) {
   if (estado === ESTADO_CAMPANA.BORRADOR) return "BORRADOR";
@@ -189,152 +275,286 @@ export default function AppCampanasRoute() {
   return (
     <s-page heading="Campanas">
       <s-section heading="Nueva campana">
-        <Form method="post">
-          <input type="hidden" name="_action" value="crear_campana" />
-          <div style={{ display: "grid", gap: 12, maxWidth: 560 }}>
-            <label>
-              Nombre
-              <input name="nombre" required placeholder="Black Friday 2026" />
-            </label>
-            <label>
-              Codigo
-              <input name="codigo" required placeholder="BLACKFRIDAY-2026" />
-            </label>
-            <label>
-              Descripcion
-              <input name="descripcion" placeholder="Campana de temporada" />
-            </label>
-            <label>
-              Fecha inicio
-              <input name="fechaInicio" type="date" required />
-            </label>
-            <label>
-              Fecha fin (opcional)
-              <input name="fechaFin" type="date" />
-            </label>
-            <button type="submit">Crear campana</button>
+        <div style={surfaceStyle}>
+          <Form method="post">
+            <input type="hidden" name="_action" value="crear_campana" />
+            <div style={formGridStyle}>
+              <div style={twoColumnGridStyle}>
+                <label style={fieldLabelStyle}>
+                  <span>Nombre</span>
+                  <input
+                    name="nombre"
+                    required
+                    placeholder="Black Friday 2026"
+                    style={fieldStyle}
+                  />
+                </label>
+                <label style={fieldLabelStyle}>
+                  <span>Codigo</span>
+                  <input
+                    name="codigo"
+                    required
+                    placeholder="BLACKFRIDAY-2026"
+                    style={fieldStyle}
+                  />
+                </label>
+                <label style={fieldLabelStyle}>
+                  <span>Descripcion</span>
+                  <input
+                    name="descripcion"
+                    placeholder="Campana de temporada"
+                    style={fieldStyle}
+                  />
+                </label>
+                <label style={fieldLabelStyle}>
+                  <span>Fecha inicio</span>
+                  <input name="fechaInicio" type="date" required style={fieldStyle} />
+                </label>
+              </div>
+              <label style={{ ...fieldLabelStyle, maxWidth: 280 }}>
+                <span>Fecha fin (opcional)</span>
+                <input name="fechaFin" type="date" style={fieldStyle} />
+              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <p style={helperStyle}>
+                  Usa codigos consistentes para medir resultados por temporada o canal.
+                </p>
+                <button type="submit" style={primaryButtonStyle}>
+                  Crear campana
+                </button>
+              </div>
+            </div>
+          </Form>
+        </div>
+        {actionData?.mensaje ? (
+          <div
+            style={{
+              ...surfaceStyle,
+              marginTop: 12,
+              background: actionData.ok ? "#f1fff3" : "#fff5f5",
+              borderColor: actionData.ok ? "#aee9b3" : "#e7b3ad",
+            }}
+          >
+            <s-paragraph>{actionData.mensaje}</s-paragraph>
           </div>
-        </Form>
-        {actionData?.mensaje ? <s-paragraph>{actionData.mensaje}</s-paragraph> : null}
+        ) : null}
       </s-section>
 
       <s-section heading="Filtro por estado">
-        <Form method="get">
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <select
-              name="estado"
-              defaultValue={filtroEstado === null ? "" : String(filtroEstado)}
+        <div style={surfaceStyle}>
+          <Form method="get">
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                alignItems: "end",
+                flexWrap: "wrap",
+              }}
             >
-              <option value="">Todas</option>
-              <option value={String(ESTADO_CAMPANA.BORRADOR)}>BORRADOR</option>
-              <option value={String(ESTADO_CAMPANA.ACTIVA)}>ACTIVA</option>
-              <option value={String(ESTADO_CAMPANA.PAUSADA)}>PAUSADA</option>
-              <option value={String(ESTADO_CAMPANA.FINALIZADA)}>FINALIZADA</option>
-            </select>
-            <button type="submit">Filtrar</button>
-            {searchParams.get("estado") ? <a href="/app/campanas">Limpiar</a> : null}
-          </div>
-        </Form>
+              <label style={{ ...fieldLabelStyle, minWidth: 220 }}>
+                <span>Estado</span>
+                <select
+                  name="estado"
+                  defaultValue={filtroEstado === null ? "" : String(filtroEstado)}
+                  style={fieldStyle}
+                >
+                  <option value="">Todas</option>
+                  <option value={String(ESTADO_CAMPANA.BORRADOR)}>BORRADOR</option>
+                  <option value={String(ESTADO_CAMPANA.ACTIVA)}>ACTIVA</option>
+                  <option value={String(ESTADO_CAMPANA.PAUSADA)}>PAUSADA</option>
+                  <option value={String(ESTADO_CAMPANA.FINALIZADA)}>FINALIZADA</option>
+                </select>
+              </label>
+              <button type="submit" style={secondaryButtonStyle}>
+                Filtrar
+              </button>
+              {searchParams.get("estado") ? (
+                <a href="/app/campanas" style={{ ...helperStyle, alignSelf: "center" }}>
+                  Limpiar
+                </a>
+              ) : null}
+            </div>
+          </Form>
+        </div>
       </s-section>
 
       <s-section heading="Gestion de afiliados por campana">
         {campanas.length === 0 ? (
-          <s-paragraph>No hay campanas registradas.</s-paragraph>
+          <div style={surfaceStyle}>
+            <s-paragraph>No hay campanas registradas.</s-paragraph>
+          </div>
         ) : (
           <div style={{ display: "grid", gap: 16 }}>
             {campanas.map((campana) => (
-              <div
-                key={campana.id}
-                style={{ border: "1px solid #d9d9d9", borderRadius: 8, padding: 12 }}
-              >
-                <s-heading>{campana.nombre}</s-heading>
-                <s-paragraph>
-                  Codigo: {campana.codigo} | Estado: {etiquetaEstadoCampana(campana.estado)}
-                </s-paragraph>
+              <div key={campana.id} style={surfaceStyle}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <s-heading>{campana.nombre}</s-heading>
+                    <p style={helperStyle}>
+                      Vigencia: {campana.fechaInicio.toISOString().slice(0, 10)}
+                      {campana.fechaFin ? ` -> ${campana.fechaFin.toISOString().slice(0, 10)}` : ""}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={pillStyle}>{campana.codigo}</span>
+                    <span style={pillStyle}>{etiquetaEstadoCampana(campana.estado)}</span>
+                    <span style={pillStyle}>{campana.afiliados.length} afiliados</span>
+                  </div>
+                </div>
 
                 <Form method="post">
                   <input type="hidden" name="_action" value="editar_campana" />
                   <input type="hidden" name="campanaId" value={campana.id} />
-                  <div style={{ display: "grid", gap: 8, maxWidth: 560, marginBottom: 12 }}>
-                    <label>
-                      Nombre
-                      <input name="nombre" required defaultValue={campana.nombre} />
-                    </label>
-                    <label>
-                      Descripcion
-                      <input name="descripcion" defaultValue={campana.descripcion || ""} />
-                    </label>
-                    <label>
-                      Fecha inicio
-                      <input
-                        name="fechaInicio"
-                        type="date"
-                        required
-                        defaultValue={campana.fechaInicio.toISOString().slice(0, 10)}
-                      />
-                    </label>
-                    <label>
-                      Fecha fin
-                      <input
-                        name="fechaFin"
-                        type="date"
-                        defaultValue={
-                          campana.fechaFin ? campana.fechaFin.toISOString().slice(0, 10) : ""
-                        }
-                      />
-                    </label>
-                    <label>
-                      Estado
-                      <select name="estado" defaultValue={String(campana.estado)}>
+                  <div style={formGridStyle}>
+                    <div style={twoColumnGridStyle}>
+                      <label style={fieldLabelStyle}>
+                        <span>Nombre</span>
+                        <input
+                          name="nombre"
+                          required
+                          defaultValue={campana.nombre}
+                          style={fieldStyle}
+                        />
+                      </label>
+                      <label style={fieldLabelStyle}>
+                        <span>Descripcion</span>
+                        <input
+                          name="descripcion"
+                          defaultValue={campana.descripcion || ""}
+                          style={fieldStyle}
+                        />
+                      </label>
+                      <label style={fieldLabelStyle}>
+                        <span>Fecha inicio</span>
+                        <input
+                          name="fechaInicio"
+                          type="date"
+                          required
+                          defaultValue={campana.fechaInicio.toISOString().slice(0, 10)}
+                          style={fieldStyle}
+                        />
+                      </label>
+                      <label style={fieldLabelStyle}>
+                        <span>Fecha fin</span>
+                        <input
+                          name="fechaFin"
+                          type="date"
+                          defaultValue={
+                            campana.fechaFin ? campana.fechaFin.toISOString().slice(0, 10) : ""
+                          }
+                          style={fieldStyle}
+                        />
+                      </label>
+                    </div>
+                    <label style={{ ...fieldLabelStyle, maxWidth: 280 }}>
+                      <span>Estado</span>
+                      <select
+                        name="estado"
+                        defaultValue={String(campana.estado)}
+                        style={fieldStyle}
+                      >
                         <option value={String(ESTADO_CAMPANA.BORRADOR)}>BORRADOR</option>
                         <option value={String(ESTADO_CAMPANA.ACTIVA)}>ACTIVA</option>
                         <option value={String(ESTADO_CAMPANA.PAUSADA)}>PAUSADA</option>
                         <option value={String(ESTADO_CAMPANA.FINALIZADA)}>FINALIZADA</option>
                       </select>
                     </label>
-                    <button type="submit">Guardar cambios</button>
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button type="submit" style={secondaryButtonStyle}>
+                        Guardar cambios
+                      </button>
+                    </div>
                   </div>
                 </Form>
 
-                <Form method="post">
-                  <input type="hidden" name="_action" value="asignar_afiliado" />
-                  <input type="hidden" name="campanaId" value={campana.id} />
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <select name="afiliadoId" required>
-                      <option value="">Selecciona afiliado</option>
-                      {afiliados.map((afiliado) => (
-                        <option key={afiliado.id} value={afiliado.id}>
-                          {afiliado.codigo} - {afiliado.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    <button type="submit">Asignar</button>
-                  </div>
-                </Form>
+                <div
+                  style={{
+                    borderTop: "1px solid #ececec",
+                    marginTop: 16,
+                    paddingTop: 16,
+                    display: "grid",
+                    gap: 12,
+                  }}
+                >
+                  <Form method="post">
+                    <input type="hidden" name="_action" value="asignar_afiliado" />
+                    <input type="hidden" name="campanaId" value={campana.id} />
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 12,
+                        alignItems: "end",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <label style={{ ...fieldLabelStyle, minWidth: 260, flex: "1 1 260px" }}>
+                        <span>Asignar afiliado</span>
+                        <select name="afiliadoId" required style={fieldStyle}>
+                          <option value="">Selecciona afiliado</option>
+                          {afiliados.map((afiliado) => (
+                            <option key={afiliado.id} value={afiliado.id}>
+                              {afiliado.codigo} - {afiliado.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button type="submit" style={secondaryButtonStyle}>
+                        Asignar
+                      </button>
+                    </div>
+                  </Form>
 
-                <s-unordered-list>
                   {campana.afiliados.length === 0 ? (
-                    <s-list-item>Sin afiliados asignados.</s-list-item>
+                    <p style={helperStyle}>Sin afiliados asignados.</p>
                   ) : (
-                    campana.afiliados.map((registro) => (
-                      <s-list-item key={registro.id}>
-                        {registro.afiliado.codigo} - {registro.afiliado.nombre}{" "}
-                        <Form method="post" style={{ display: "inline-block", marginLeft: 8 }}>
-                          <input type="hidden" name="_action" value="desasignar_afiliado" />
-                          <input type="hidden" name="campanaId" value={campana.id} />
-                          <input type="hidden" name="afiliadoId" value={registro.afiliadoId} />
-                          <button type="submit">Quitar</button>
-                        </Form>
-                      </s-list-item>
-                    ))
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {campana.afiliados.map((registro) => (
+                        <div
+                          key={registro.id}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            padding: "10px 12px",
+                            border: "1px solid #ececec",
+                            borderRadius: 8,
+                          }}
+                        >
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <span style={pillStyle}>{registro.afiliado.codigo}</span>
+                            <span>{registro.afiliado.nombre}</span>
+                          </div>
+                          <Form method="post">
+                            <input type="hidden" name="_action" value="desasignar_afiliado" />
+                            <input type="hidden" name="campanaId" value={campana.id} />
+                            <input type="hidden" name="afiliadoId" value={registro.afiliadoId} />
+                            <button type="submit" style={dangerButtonStyle}>
+                              Quitar
+                            </button>
+                          </Form>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </s-unordered-list>
 
-                <Form method="post">
-                  <input type="hidden" name="_action" value="eliminar_campana" />
-                  <input type="hidden" name="campanaId" value={campana.id} />
-                  <button type="submit">Eliminar campana</button>
-                </Form>
+                  <Form method="post">
+                    <input type="hidden" name="_action" value="eliminar_campana" />
+                    <input type="hidden" name="campanaId" value={campana.id} />
+                    <button type="submit" style={dangerButtonStyle}>
+                      Eliminar campana
+                    </button>
+                  </Form>
+                </div>
               </div>
             ))}
           </div>
