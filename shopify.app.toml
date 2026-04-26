@@ -1,24 +1,18 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "366ce46c53a65a943ff89fd2bd0b824d"
-application_url = "https://shopify.dev/apps/default-app-home"
+client_id = "f121f07d7425b2ef01186e58d82f1972"
+application_url = "https://example.com"
 embedded = true
-name = "Affiliate & Commission Engine"
+name = "app-afiliados-sh"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = ""
-
-[webhooks]
-api_version = "2026-07"
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/app/uninstalled"
-  topics = [ "app/uninstalled" ]
+optional_scopes = [ ]
+use_legacy_install_flow = false
 
 [auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+redirect_urls = [ ]
 
-[build]
-include_config_on_deploy = true
-automatically_update_urls_on_dev = true
+[webhooks]
+api_version = "2026-04"
