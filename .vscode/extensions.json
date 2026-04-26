@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "prisma.prisma",
+    "graphql.vscode-graphql",
+    "graphql.vscode-graphql-syntax",
+    "shopify.shopify-liquid",
+    "mikestead.dotenv",
+    "christian-kohler.npm-intellisense"
+  ],
+  "unwantedRecommendations": [
+    "hookyqr.beautify"
+  ]
+}
