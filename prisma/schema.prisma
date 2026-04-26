@@ -10,25 +10,127 @@ generator client {
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
-  url      = "file:dev.sqlite"
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+model Tienda {
+  id            String   @id @default(cuid())
+  dominio       String   @unique
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  afiliados    Afiliado[]
+  visitas      VisitaReferida[]
+  conversiones EventoConversion[]
+  cobrosUso    BitacoraCobroUso[]
+}
+
+model Afiliado {
+  id            String   @id @default(cuid())
+  tiendaId      String
+  codigo        String
+  nombre        String
+  email         String?
+  tasaComision  Decimal  @default(0)
+  estado        Int      @default(1)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tienda       Tienda             @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  visitas      VisitaReferida[]
+  conversiones EventoConversion[]
+
+  @@unique([tiendaId, codigo])
+  @@index([tiendaId, estado])
+}
+
+model VisitaReferida {
+  id                String    @id @default(cuid())
+  tiendaId          String
+  afiliadoId        String
+  codigoRefOriginal String?
+  claveSesion       String?
+  rutaEntrada       String?
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  tokenCliente      String?
+  primerContactoEn  DateTime?
+  creadoEn          DateTime  @default(now())
+
+  tienda       Tienda             @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  afiliado     Afiliado           @relation(fields: [afiliadoId], references: [id], onDelete: Cascade)
+  conversiones EventoConversion[]
+
+  @@index([tiendaId, afiliadoId, creadoEn(sort: Desc)])
+}
+
+model EventoConversion {
+  id                    String   @id @default(cuid())
+  tiendaId              String
+  afiliadoId            String
+  visitaReferidaId      String?
+  ordenId               String
+  ordenNombre           String?
+  subtotalOrden         Decimal  @default(0)
+  totalOrden            Decimal  @default(0)
+  moneda                String   @default("USD")
+  montoComisionAfiliado Decimal  @default(0)
+  montoComisionApp      Decimal  @default(0)
+  pixelEventoId         String?
+  estado                Int      @default(1)
+  ocurridoEn            DateTime
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+
+  tienda         Tienda            @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  afiliado       Afiliado          @relation(fields: [afiliadoId], references: [id], onDelete: Cascade)
+  visitaReferida VisitaReferida?   @relation(fields: [visitaReferidaId], references: [id], onDelete: SetNull)
+  cobroUso       BitacoraCobroUso?
+
+  @@unique([tiendaId, ordenId])
+  @@unique([tiendaId, pixelEventoId])
+  @@index([tiendaId, ocurridoEn(sort: Desc)])
+  @@index([tiendaId, afiliadoId, ocurridoEn(sort: Desc)])
+}
+
+model BitacoraCobroUso {
+  id                    String    @id @default(cuid())
+  tiendaId              String
+  eventoConversionId    String    @unique
+  suscripcionLineItemId String?
+  usageRecordId         String?   @unique
+  monto                 Decimal   @default(0)
+  moneda                String    @default("USD")
+  estado                Int       @default(1)
+  codigoError           String?
+  mensajeError          String?
+  intentos              Int       @default(0)
+  cobradoEn             DateTime?
+  creadoEn              DateTime  @default(now())
+  actualizadoEn         DateTime  @updatedAt
+
+  tienda           Tienda           @relation(fields: [tiendaId], references: [id], onDelete: Cascade)
+  eventoConversion EventoConversion @relation(fields: [eventoConversionId], references: [id], onDelete: Cascade)
+
+  @@index([tiendaId, estado, creadoEn(sort: Desc)])
 }
