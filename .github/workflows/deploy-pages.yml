@@ -30,6 +30,7 @@ jobs:
 
       - name: Ensure docs index exists
         run: |
+          mkdir -p .docs
           if [ ! -f ".docs/index.md" ]; then
             echo "# Documentation" > .docs/index.md
           fi
