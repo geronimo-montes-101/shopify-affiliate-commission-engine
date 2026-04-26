@@ -26,3 +26,4 @@ database.sqlite
 .react-router/
 
 .docs
+dev.sqlite

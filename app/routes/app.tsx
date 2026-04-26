@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Outlet, useLoaderData, useRouteError } from "react-router";
+import { Link, Outlet, useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
@@ -9,7 +9,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 	await authenticate.admin(request);
 
 	// eslint-disable-next-line no-undef
-	return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+	return {
+		apiKey:
+			process.env.SHOPIFY_API_KEY ?? process.env.SHOPIFY_API_KEY_DEV ?? "",
+	};
 };
 
 export default function App() {
@@ -17,9 +20,19 @@ export default function App() {
 
 	return (
 		<AppProvider embedded apiKey={apiKey}>
-			<s-app-nav>
-				<s-link href="/app">Home</s-link>
-			</s-app-nav>
+			<nav
+				style={{
+					display: "flex",
+					gap: 16,
+					padding: "12px 16px",
+					borderBottom: "1px solid #d9d9d9",
+					marginBottom: 16,
+				}}
+			>
+				<Link to="/app">Home</Link>
+				<Link to="/app/afiliados">Afiliados</Link>
+				<Link to="/app/campanas">Campanas</Link>
+			</nav>
 			<Outlet />
 		</AppProvider>
 	);
