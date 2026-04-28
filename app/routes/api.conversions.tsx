@@ -4,6 +4,7 @@ import {
   validarPayloadConversion,
 } from "../models/conversion/conversion.server";
 import type { ConversionPayload } from "../models/conversion/conversion.types";
+import { esFirmaConversionValida } from "../utils/conversion-hmac.server";
 
 function json(data: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(data), {
@@ -20,10 +21,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ ok: false, mensaje: "Metodo no permitido." }, { status: 405 });
   }
 
+  const rawBody = await request.text();
+  const firmaOk = esFirmaConversionValida(
+    request.headers.get("X-CAE-Timestamp"),
+    request.headers.get("X-CAE-Signature"),
+    rawBody,
+  );
+  if (!firmaOk) {
+    return json({ ok: false, mensaje: "Firma invalida o expirada." }, { status: 401 });
+  }
+
   let payload: ConversionPayload;
 
   try {
-    payload = (await request.json()) as ConversionPayload;
+    payload = JSON.parse(rawBody) as ConversionPayload;
   } catch {
     return json({ ok: false, mensaje: "JSON invalido." }, { status: 400 });
   }

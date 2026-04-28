@@ -4,7 +4,42 @@ const STORAGE_KEY = "cae_affiliate_engine_v1";
 
 type PixelSettings = {
   conversion_endpoint?: string;
+  conversion_hmac_secret?: string;
 };
+
+async function firmarCuerpoHmac(
+  secreto: string,
+  rawBody: string,
+): Promise<{ ts: string; sig: string }> {
+  const ts = String(Math.floor(Date.now() / 1000));
+  const payload = `${ts}.${rawBody}`;
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secreto),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const buf = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
+  const sig = Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return { ts, sig };
+}
+
+async function cabecerasPost(
+  settings: PixelSettings,
+  rawBody: string,
+): Promise<Record<string, string>> {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const secreto = String(settings.conversion_hmac_secret ?? "").trim();
+  if (!secreto) return h;
+  const { ts, sig } = await firmarCuerpoHmac(secreto, rawBody);
+  h["X-CAE-Timestamp"] = ts;
+  h["X-CAE-Signature"] = sig;
+  return h;
+}
 
 type InitShop = {
   data?: {
@@ -113,11 +148,16 @@ register(({ analytics, browser, init, settings }) => {
       refOriginal: stored.affiliateCode,
     };
 
+    const rawBody = JSON.stringify(body);
     try {
+      const headers = await cabecerasPost(
+        settings as PixelSettings,
+        rawBody,
+      );
       await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        headers,
+        body: rawBody,
         keepalive: true,
       });
     } catch {

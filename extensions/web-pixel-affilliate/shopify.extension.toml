@@ -12,3 +12,8 @@ name = "URL de conversiones (POST)"
 description = "URL completa HTTPS del endpoint POST de tu app (por ejemplo https://tu-app.com/api/conversions)."
 type = "single_line_text_field"
 validations = [{ name = "min", value = "8" }]
+
+[settings.fields.conversion_hmac_secret]
+name = "Secreto HMAC (opcional)"
+description = "Debe coincidir con la variable CONVERSION_HMAC_SECRET del servidor. Si esta vacio, no se envia firma."
+type = "single_line_text_field"
