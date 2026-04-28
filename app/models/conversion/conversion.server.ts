@@ -6,6 +6,7 @@ import {
   type ConversionResult,
 } from "./conversion.types";
 import { obtenerOCrearTienda } from "../../tenant.server";
+import { intentarRegistrarUsageRecordShopify } from "../billing/usage-record.server";
 
 function esDominioShopifyValido(shopDomain: string) {
   return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(shopDomain);
@@ -160,6 +161,15 @@ export async function registrarConversion(
         estado: ENUM_ESTADO_CONVERSION.PENDIENTE,
         ocurridoEn: input.occurredAt,
       },
+    });
+
+    await intentarRegistrarUsageRecordShopify({
+      tiendaId: tienda.id,
+      shopDomain: input.shopDomain,
+      eventoConversionId: conversion.id,
+      ordenId: input.orderId,
+      montoComisionApp,
+      moneda: input.currency,
     });
 
     return {
