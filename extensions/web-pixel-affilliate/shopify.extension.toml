@@ -7,10 +7,8 @@ runtime_context = "strict"
 [settings]
 type = "object"
 
-[settings.fields.accountID]
-name = "Account ID"
-description = "Account ID"
+[settings.fields.conversion_endpoint]
+name = "URL de conversiones (POST)"
+description = "URL completa HTTPS del endpoint POST de tu app (por ejemplo https://tu-app.com/api/conversions)."
 type = "single_line_text_field"
-validations =  [
-  { name = "min", value = "1" }
-]
+validations = [{ name = "min", value = "8" }]
