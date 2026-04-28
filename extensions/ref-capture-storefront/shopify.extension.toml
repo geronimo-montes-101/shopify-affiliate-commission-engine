@@ -1,0 +1,8 @@
+# Captura ?ref= (y opcional ?camp=) en el storefront; debe activarse como App embed en el editor de tema.
+api_version = "2025-07"
+
+[[extensions]]
+uid = "b8e9f0a1-2c3d-4e5f-8a9b-1c2d3e4f5a6b"
+type = "theme"
+name = "ref-capture-storefront"
+handle = "ref-capture-storefront"
